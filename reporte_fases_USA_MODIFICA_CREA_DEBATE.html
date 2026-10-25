@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Interactivo: Simulación de Montecarlo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        iublue: '#0f2b5b',
+                        iugreen: '#8cc63f',
+                        iugray: '#f3f4f6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Tab Transitions */
+        .tab-content { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .tab-content.active { display: block; }
+        .tab-btn.active { border-left-color: #8cc63f; background-color: #f3f4f6; color: #0f2b5b; font-weight: 600; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar styles for iframe compatibility */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Progress Bar */
+        #scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background-color: #8cc63f;
+            z-index: 100;
+            transition: width 0.1s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-800 antialiased h-full w-full overflow-x-hidden">
+
+    <div id="scroll-progress" style="width: 0%;"></div>
+
+    <!-- Main Container (Responsive for Google Sites) -->
+    <div class="max-w-6xl mx-auto bg-white sm:shadow-xl sm:rounded-2xl overflow-hidden sm:my-6 border border-gray-100">
+        
+        <!-- Header Académico -->
+        <header class="bg-iublue text-white p-6 md:p-10 relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-64 h-64 bg-iugreen rounded-full opacity-20 blur-3xl"></div>
+            <div class="relative z-10">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <span class="inline-block bg-white text-iublue text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-3">
+                            Ingeniería de Software y Datos • 5° Semestre
+                        </span>
+                        <h1 class="text-3xl md:text-4xl font-bold leading-tight mb-2">
+                            Simulación de Montecarlo: <br><span class="text-iugreen">Análisis Estocástico en Yahtzee</span>
+                        </h1>
+                    </div>
+                </div>
+                <div class="bg-blue-900/40 p-4 rounded-lg border border-blue-700/50 backdrop-blur-sm mt-6">
+                    <h3 class="text-sm font-semibold text-iugreen uppercase tracking-wider mb-1 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Objetivo de Aprendizaje
+                    </h3>
+                    <p class="text-sm md:text-base text-gray-200">
+                        Analizar y evaluar el comportamiento de sistemas estocásticos complejos mediante la simulación de Montecarlo, implementando iteraciones computacionales y aplicando la Ley de los Grandes Números para la toma de decisiones algorítmicas.
+                    </p>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6 md:p-10">
+            
+            <!-- Marco Conceptual (Tabs) -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold text-iublue mb-6 border-b-2 border-iugreen pb-2 inline-block">Fundamentos Teóricos</h2>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Tab Buttons -->
+                    <div class="md:w-1/4 flex flex-col space-y-2 border-l-4 border-gray-200 pl-0">
+                        <button class="tab-btn active text-left px-4 py-3 rounded-r-lg border-l-4 border-transparent text-gray-600 hover:bg-gray-50 transition-colors" onclick="switchTab('tab-montecarlo', this)">
+                            1. Método de Montecarlo
+                        </button>
+                        <button class="tab-btn text-left px-4 py-3 rounded-r-lg border-l-4 border-transparent text-gray-600 hover:bg-gray-50 transition-colors" onclick="switchTab('tab-probabilidad', this)">
+                            2. Probabilidad vs Fuerza Bruta
+                        </button>
+                        <button class="tab-btn text-left px-4 py-3 rounded-r-lg border-l-4 border-transparent text-gray-600 hover:bg-gray-50 transition-colors" onclick="switchTab('tab-ley', this)">
+                            3. Ley de los Grandes Números
+                        </button>
+                    </div>
+                    
+                    <!-- Tab Content -->
+                    <div class="md:w-3/4 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div id="tab-montecarlo" class="tab-content active">
+                            <h3 class="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                                <svg class="w-6 h-6 text-iugreen mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                Método de Montecarlo en Ingeniería
+                            </h3>
+                            <p class="text-gray-600 mb-4 leading-relaxed">
+                                A diferencia de los enfoques matemáticos deterministas, la Simulación de Montecarlo utiliza la <strong>aleatoriedad y la repetición computacional masiva</strong> para estimar resultados de sistemas probabilísticos complejos.
+                            </p>
+                            <div class="bg-iugray p-4 rounded-lg text-sm text-gray-700">
+                                <strong>Aplicación clave:</strong> En ingeniería de software, se usa cuando el espacio de estados de un problema es demasiado vasto para calcularse exhaustivamente (problemas NP-Hard, estimación de tráfico de redes, o rendering en gráficos 3D).
+                            </div>
+                        </div>
+                        
+                        <div id="tab-probabilidad" class="tab-content">
+                            <h3 class="text-xl font-bold text-slate-800 mb-3">Espacios Combinatorios</h3>
+                            <p class="text-gray-600 mb-4 leading-relaxed">
+                                En Yahtzee, lanzar 5 dados genera <strong>7,776 combinaciones posibles</strong> ($6^5$). Calcular la probabilidad analítica de eventos sencillos es fácil, pero al introducir relanzamientos y variables dinámicas, la combinatoria se vuelve inmanejable.
+                            </p>
+                            <p class="text-gray-600 leading-relaxed">
+                                Aquí es donde brilla el cómputo moderno: en lugar de buscar la fórmula perfecta, le decimos a la CPU que juegue millones de veces y cuente empíricamente cuántas veces ocurre el evento.
+                            </p>
+                        </div>
+
+                        <div id="tab-ley" class="tab-content">
+                            <h3 class="text-xl font-bold text-slate-800 mb-3">Convergencia Asintótica</h3>
+                            <p class="text-gray-600 mb-4 leading-relaxed">
+                                La <strong>Ley Fuerte de los Grandes Números</strong> garantiza que, conforme el número de iteraciones (N) crece hacia el infinito, la media empírica calculada por nuestro algoritmo convergerá al valor esperado teórico.
+                            </p>
+                            <div class="border-l-4 border-iugreen pl-4 py-2 bg-green-50 text-sm text-gray-700">
+                                <span class="font-bold">Nota técnica:</span> La velocidad de esta convergencia depende directamente de la calidad del <em>Generador de Números Pseudoaleatorios (PRNG)</em> utilizado en el código.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Laboratorio Virtual / Multimedia -->
+            <section class="mb-12 bg-slate-900 rounded-2xl overflow-hidden shadow-xl">
+                <div class="bg-slate-800 px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <svg class="w-5 h-5 text-iugreen mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        Laboratorio Virtual: Motor de Simulación
+                    </h2>
+                    <span class="px-2 py-1 bg-slate-700 text-xs text-slate-300 rounded uppercase font-mono">JS Engine</span>
+                </div>
+                
+                <div class="p-6 md:p-8 flex flex-col lg:flex-row gap-8 items-center">
+                    <!-- Simulador Interactivo Integrado -->
+                    <div class="w-full lg:w-3/5 bg-slate-800 p-6 rounded-xl border border-slate-700 relative">
+                        <div class="mb-6 flex justify-center gap-4 text-4xl" id="dice-container">
+                            🎲 🎲 🎲 🎲 🎲
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="block text-slate-400 text-xs uppercase mb-2">Iteraciones (N)</label>
+                                <select id="sim-iters" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-iugreen focus:border-iugreen block p-2.5">
+                                    <option value="10000">10,000 lanzamientos</option>
+                                    <option value="100000">100,000 lanzamientos</option>
+                                    <option value="1000000">1,000,000 lanzamientos (Test de Estrés)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="btn-simulate" onclick="runSimulation()" class="w-full bg-iugreen hover:bg-green-600 text-slate-900 font-bold py-2.5 px-4 rounded-lg transition-colors shadow-[0_0_15px_rgba(140,198,63,0.3)]">
+                                    Ejecutar Algoritmo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar Lab -->
+                        <div class="w-full bg-slate-900 rounded-full h-2.5 mb-4 border border-slate-700 overflow-hidden">
+                            <div id="lab-progress" class="bg-iugreen h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+
+                        <div class="bg-slate-900 rounded-lg p-4 text-center border border-slate-700 font-mono">
+                            <p class="text-slate-400 text-xs uppercase mb-1">Probabilidad Empírica de Yahtzee</p>
+                            <p id="lab-result" class="text-3xl font-bold text-white tracking-wider">0.0000%</p>
+                            <p id="lab-stats" class="text-xs text-slate-500 mt-2">A la espera de ejecución...</p>
+                        </div>
+                    </div>
+
+                    <!-- Guía de Observación -->
+                    <div class="w-full lg:w-2/5 space-y-4">
+                        <h4 class="text-lg font-bold text-white border-b border-slate-700 pb-2">Guía de Análisis Crítico</h4>
+                        <ul class="space-y-4 text-sm text-slate-300">
+                            <li class="flex items-start">
+                                <span class="text-iugreen font-bold mr-2 text-lg leading-none">1.</span>
+                                <div>Observa la varianza. ¿Cómo difieren los resultados al ejecutar múltiples veces N=10,000 versus N=1,000,000?</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-iugreen font-bold mr-2 text-lg leading-none">2.</span>
+                                <div>Considera el rendimiento. ¿Cuál es el impacto computacional del bucle al escalar la simulación en JavaScript?</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-iugreen font-bold mr-2 text-lg leading-none">3.</span>
+                                <div>Compara el resultado final con la probabilidad teórica exacta ($1/1296 \approx 0.07716\%$). ¿El error es aceptable para un entorno de producción?</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Caso de Estudio Práctico -->
+            <section class="mb-12">
+                <div class="bg-blue-50 border-l-4 border-iublue p-6 rounded-r-xl">
+                    <h2 class="text-xl font-bold text-iublue mb-3 flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2-2v10a2 2 0 002 2z"></path></svg>
+                        Caso de Estudio Profesional: Auditoría de Casino
+                    </h2>
+                    <p class="text-gray-700 mb-4">
+                        Una casa de apuestas digitales te contrata como Ingeniero de Datos para auditar una nueva variante llamada <strong>"Mega Yahtzee"</strong> que utiliza 6 dados en lugar de 5. El casino desea ofrecer un premio acumulado si el jugador logra sacar 6 caras idénticas en el primer lanzamiento.
+                    </p>
+                    <p class="text-gray-700 font-semibold">
+                        Reto Analítico:
+                    </p>
+                    <p class="text-gray-700 text-sm mt-1">
+                        El departamento financiero requiere saber el margen de la casa. Si utilizas el código actual, ¿qué modificaciones arquitectónicas harías en tu estructura de datos y condicionales lógicos para acomodar N dimensiones (dados) y garantizar que la pseudo-aleatoriedad de las simulaciones no exponga al casino a vulnerabilidades predictivas?
+                    </p>
+                </div>
+            </section>
+
+            <!-- Autoevaluación Formativa (Knowledge Check) -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-bold text-iublue mb-6 inline-flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-iugreen" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    Autoevaluación Formativa
+                </h2>
+                
+                <div class="space-y-6">
+                    <!-- Pregunta 1 -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm question-block" data-answer="B">
+                        <p class="font-semibold text-slate-800 mb-4">1. En el desarrollo de software, ¿cuál es la ventaja principal de usar Montecarlo frente a un algoritmo de cálculo combinatorio determinista?</p>
+                        <div class="space-y-2">
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q1" value="A" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">Garantiza precisión matemática del 100% independientemente del tamaño muestral.</span>
+                            </label>
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q1" value="B" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">Aproxima soluciones viables en sistemas NP-Hard donde el espacio de estados es demasiado grande para evaluarse exhaustivamente.</span>
+                            </label>
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q1" value="C" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">Reduce automáticamente la complejidad temporal de O(N^2) a O(1).</span>
+                            </label>
+                        </div>
+                        <div class="feedback hidden mt-4 p-4 rounded-lg text-sm"></div>
+                    </div>
+
+                    <!-- Pregunta 2 -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm question-block" data-answer="C">
+                        <p class="font-semibold text-slate-800 mb-4">2. Al ejecutar el simulador con N=100 la probabilidad varía enormemente, pero con N=1,000,000 se estabiliza. ¿Qué principio rige este comportamiento?</p>
+                        <div class="space-y-2">
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q2" value="A" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">La Falacia del Apostador.</span>
+                            </label>
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q2" value="B" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">Teorema de la Varianza Mínima.</span>
+                            </label>
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q2" value="C" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">La Ley Fuerte de los Grandes Números.</span>
+                            </label>
+                        </div>
+                        <div class="feedback hidden mt-4 p-4 rounded-lg text-sm"></div>
+                    </div>
+
+                    <!-- Pregunta 3 -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm question-block" data-answer="A">
+                        <p class="font-semibold text-slate-800 mb-4">3. A nivel de infraestructura de código, ¿cuál es el mayor riesgo técnico que invalidaría los resultados de tu simulación?</p>
+                        <div class="space-y-2">
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q3" value="A" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">Un PRNG (Generador Pseudoaleatorio) con semilla estática, distribución sesgada o período muy corto.</span>
+                            </label>
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q3" value="B" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">Utilizar tipado dinámico en lugar de tipado estricto para almacenar los contadores.</span>
+                            </label>
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="q3" value="C" class="mt-1 mr-3 text-iugreen focus:ring-iugreen">
+                                <span class="text-sm text-gray-700">No encapsular la simulación dentro de clases u objetos (POO).</span>
+                            </label>
+                        </div>
+                        <div class="feedback hidden mt-4 p-4 rounded-lg text-sm"></div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-between items-center">
+                    <button onclick="checkQuiz()" class="bg-iublue hover:bg-blue-800 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+                        Verificar Respuestas
+                    </button>
+                    
+                    <!-- Botón Exportar Notas -->
+                    <button id="copy-btn" onclick="copyNotes()" class="text-gray-500 hover:text-iugreen flex items-center text-sm font-medium transition-colors bg-gray-100 hover:bg-green-50 px-4 py-2 rounded-lg">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                        Copiar Resumen Académico
+                    </button>
+                </div>
+            </section>
+        </div>
+        
+        <footer class="bg-gray-100 text-center py-4 text-xs text-gray-500 border-t border-gray-200">
+            Módulo Integrado para Google Sites • Laboratorio de Simulación Estocástica
+        </footer>
+    </div>
+
+    <!-- Scripts de Interactividad -->
+    <script>
+        // Barra de progreso de lectura
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById("scroll-progress").style.width = scrolled + "%";
+        });
+
+        // Alternancia de Pestañas (Tabs)
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+        }
+
+        // Lógica del Laboratorio Virtual (Montecarlo Yahtzee JS)
+        function runSimulation() {
+            const btn = document.getElementById('btn-simulate');
+            const progress = document.getElementById('lab-progress');
+            const result = document.getElementById('lab-result');
+            const stats = document.getElementById('lab-stats');
+            const iters = parseInt(document.getElementById('sim-iters').value);
+
+            // UI Reset
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-slate-900 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Procesando...`;
+            progress.style.width = "0%";
+            result.innerText = "Calculando...";
+            stats.innerText = "Lanzando dados...";
+
+            let yahtzees = 0;
+            let currentIter = 0;
+            // Dividimos en chunks para no bloquear el hilo principal y animar la barra
+            const chunkSize = Math.ceil(iters / 20); 
+
+            function processChunk() {
+                let end = Math.min(currentIter + chunkSize, iters);
+                for (let i = currentIter; i < end; i++) {
+                    let d1 = Math.floor(Math.random() * 6) + 1;
+                    let d2 = Math.floor(Math.random() * 6) + 1;
+                    if(d1 !== d2) continue; // Early exit optimization
+                    let d3 = Math.floor(Math.random() * 6) + 1;
+                    if(d2 !== d3) continue;
+                    let d4 = Math.floor(Math.random() * 6) + 1;
+                    if(d3 !== d4) continue;
+                    let d5 = Math.floor(Math.random() * 6) + 1;
+                    
+                    if (d4 === d5) yahtzees++;
+                }
+                currentIter = end;
+                progress.style.width = (currentIter / iters * 100) + "%";
+
+                if (currentIter < iters) {
+                    requestAnimationFrame(processChunk);
+                } else {
+                    // Finalización
+                    const prob = ((yahtzees / iters) * 100).toFixed(4);
+                    const theoProb = (1 / 1296 * 100).toFixed(4); // 0.07716%
+                    
+                    result.innerHTML = `${prob}%`;
+                    stats.innerHTML = `Ocurrencias: <strong>${yahtzees}</strong> / Teórica: ${theoProb}%`;
+                    
+                    btn.disabled = false;
+                    btn.innerText = "Ejecutar Algoritmo";
+                }
+            }
+            // Iniciar procesamiento asíncrono visual
+            requestAnimationFrame(processChunk);
+        }
+
+        // Lógica de Autoevaluación
+        const feedbacks = {
+            "1": {
+                correct: "B",
+                text: "<strong>Correcto.</strong> En ingeniería, cuando el costo computacional de evaluar todas las ramas de un árbol de probabilidad (O(b^d)) es inmanejable, Montecarlo sacrifica certeza absoluta por una aproximación estocástica de altísima viabilidad y bajo costo de procesamiento."
+            },
+            "2": {
+                correct: "C",
+                text: "<strong>Correcto.</strong> La Ley Fuerte de los Grandes Números establece que el promedio muestral converge casi con seguridad al valor esperado matemático a medida que N → ∞, reduciendo la varianza empírica."
+            },
+            "3": {
+                correct: "A",
+                text: "<strong>Correcto.</strong> El corazón de la simulación es el motor de aleatoriedad. Un PRNG deficiente (patrones repetitivos, semillas estáticas o sesgos) destruye la independencia estadística de los eventos, invalidando por completo el modelo."
+            }
+        };
+
+        function checkQuiz() {
+            const blocks = document.querySelectorAll('.question-block');
+            blocks.forEach((block, index) => {
+                const qNum = index + 1;
+                const correctAns = feedbacks[qNum].correct;
+                const selected = block.querySelector(`input[name="q${qNum}"]:checked`);
+                const feedbackDiv = block.querySelector('.feedback');
+                
+                feedbackDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+                
+                if (!selected) {
+                    feedbackDiv.innerHTML = "<em>Por favor selecciona una respuesta.</em>";
+                    feedbackDiv.classList.add('bg-gray-100', 'text-gray-600');
+                    feedbackDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (selected.value === correctAns) {
+                    feedbackDiv.innerHTML = `<span class="text-green-700 font-bold">¡Excelente!</span> ` + feedbacks[qNum].text;
+                    feedbackDiv.classList.add('bg-green-50', 'border', 'border-green-200', 'text-green-800');
+                } else {
+                    feedbackDiv.innerHTML = `<span class="text-red-700 font-bold">Incorrecto.</span> Revisa la teoría matemática. La respuesta correcta era la <strong>${correctAns}</strong>. <br><br><strong>Justificación:</strong> ` + feedbacks[qNum].text;
+                    feedbackDiv.classList.add('bg-red-50', 'border', 'border-red-200', 'text-red-800');
+                }
+                feedbackDiv.classList.remove('hidden');
+            });
+        }
+
+        // Copiar Portapapeles
+        function copyNotes() {
+            const textToCopy = `📝 RESUMEN ACADÉMICO: SIMULACIÓN DE MONTECARLO
+- Propósito: Estimar probabilidades empíricas usando repetición computacional en sistemas estocásticos complejos (NP-Hard).
+- Yahtzee y Probabilidad: La fuerza bruta evalúa millones de ejecuciones simuladas para converger al 0.07716% teórico.
+- Convergencia: Regida por la Ley de los Grandes Números (mayor N = menor varianza).
+- Riesgos Técnicos: PRNG débiles o sesgados invalidan la independencia de eventos en la simulación.`;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ¡Copiado!`;
+                btn.classList.add('text-iugreen', 'bg-green-50');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('text-iugreen', 'bg-green-50');
+                }, 3000);
+            });
+        }
+    </script>
+</body>
+</html>
